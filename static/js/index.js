@@ -34,3 +34,25 @@ function upload() {
     },
   });
 }
+
+function submit() {
+  const question = $("#imgPreview")[0].src;
+
+  disableAll(true, true);
+
+  $.ajax({
+    url: '/answer',
+    method: 'GET',
+    data: {
+      question: question.substring(question.lastIndexOf("/") + 1),
+    },
+    success: () => {
+      disableAll(false, true);
+      hint("success", "解答完成");
+    },
+    error: res => {
+      disableAll(false, true);
+      hint("danger", res.responseJSON.msg);
+    }
+  });
+}

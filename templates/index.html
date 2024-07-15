@@ -23,17 +23,17 @@
             </form>
           </div>
           <div class="col position-relative">
-            <button type="button" class="btn btn-primary position-absolute top-50 start-50 translate-middle" id="submitBtn">
+            <button type="button" class="btn btn-primary position-absolute top-50 start-50 translate-middle" id="submitBtn" onclick="submit()">
               <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
               解答应用题
             </button>
           </div>
         </div>
         <div class="row">
-          <div class="col">
+          <div class="col-6">
             <img id="imgPreview" class="img-fluid" src="">
           </div>
-          <div class="col"></div>
+          <div class="col-6"><p id="result" class="text-break"></p></div>
         </div>
     </div>
     <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
@@ -44,5 +44,15 @@
             </div>
         </div>
     </div>
+    <script>
+      var source = new EventSource("{{ url_for('sse.stream') }}");
+      source.addEventListener('answer', function(event) {
+        var data = JSON.parse(event.data);
+        $('#result')[0].innerText += data.message;
+      }, false);
+      source.addEventListener('error', function(event) {
+        hint('danger', "Failed to connect to event stream. Is Redis running?");
+      }, false);
+    </script>
   </body>
 </html>
