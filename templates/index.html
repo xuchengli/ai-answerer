@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>AI</title>
+    <title>看图解题</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
@@ -13,9 +13,27 @@
   </head>
   <body>
     <div class="container">
-        <div class="row mt-5 mb-3">
+        <div class="row mt-2 mb-3">
+          <div class="col">
+            <form enctype="multipart/form-data">
+              <div class="row">
+                <label for="formFile" class="col-3 col-form-label">上传试题图片</label>
+                <input class="col form-control" type="file" id="formFile" accept=".jpg" onchange="upload()">
+              </div>
+            </form>
+          </div>
+          <div class="col position-relative">
+            <button type="button" class="btn btn-primary position-absolute top-50 start-50 translate-middle" id="submitBtn">
+              <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+              解答应用题
+            </button>
+          </div>
         </div>
         <div class="row">
+          <div class="col">
+            <img id="imgPreview" class="img-fluid" src="">
+          </div>
+          <div class="col"></div>
         </div>
     </div>
     <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
