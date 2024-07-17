@@ -116,34 +116,13 @@ function connectWebSocket() {
     return;
   }
   ttsWS.onopen = (e) => {
+    console.log("WebSocket连接成功");
+
     audioPlayer.start({
       autoPlay: true,
       sampleRate: 16000,
       resumePlayDuration: 1000
     });
-
-    var text = $('#result')[0].innerText;
-
-    var params = {
-      common: {
-        app_id: APPID,
-      },
-      business: {
-        aue: "raw",
-        auf: "audio/L16;rate=16000",
-        vcn: "xiaoyan",
-        speed: +50,
-        volume: +50,
-        pitch: +50,
-        bgs: 1,
-        tte: "UTF8",
-      },
-      data: {
-        status: 2,
-        text: encodeText(text, "UTF8"),
-      },
-    };
-    ttsWS.send(JSON.stringify(params));
   };
   ttsWS.onmessage = (e) => {
     let jsonData = JSON.parse(e.data);
@@ -170,5 +149,36 @@ function connectWebSocket() {
 }
 
 $(document).ready(() => {
+  var source = new EventSource("/stream");
+  source.addEventListener('answer', function(event) {
+    var data = JSON.parse(event.data);
+    $('#result')[0].innerText += data.message;
+
+    // 合成语音
+    var params = {
+      common: {
+        app_id: APPID,
+      },
+      business: {
+        aue: "raw",
+        auf: "audio/L16;rate=16000",
+        vcn: "xiaoyan",
+        speed: +50,
+        volume: +50,
+        pitch: +50,
+        bgs: 1,
+        tte: "UTF8",
+      },
+      data: {
+        status: 2,
+        text: encodeText(data.message, "UTF8"),
+      },
+    };
+    ttsWS.send(JSON.stringify(params));
+  }, false);
+  source.addEventListener('error', function(event) {
+    hint('danger', "Failed to connect to event stream. Is Redis running?");
+  }, false);
+
   connectWebSocket();
 });
