@@ -88,3 +88,7 @@ def answer():
         sse.publish({"message": chunk.choices[0].delta.content}, type='answer')
 
     return str(True)
+
+@app.route('/tts')
+def tts():
+    return render_template('tts/index.html')
