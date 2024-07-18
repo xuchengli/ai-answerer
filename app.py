@@ -48,57 +48,60 @@ def answer():
     base64_image = encode_image(os.path.join(app.config['UPLOAD_FOLDER'], questionImage))
 
     # TTS websocket
-    # 收到websocket连接建立的处理
-    def on_open(ws):
-      print("### opened ###")
-
-    def on_message(ws, message):
-      try:
-          message =json.loads(message)
-          code = message["code"]
-          sid = message["sid"]
-          audio = message["data"]["audio"]
-          audio = base64.b64decode(audio)
-          status = message["data"]["status"]
-          print(message)
-          if status == 2:
+    def handle_tts(text):
+      def on_message(ws, message):
+        try:
+            message =json.loads(message)
+            code = message["code"]
+            sid = message["sid"]
+            audio = message["data"]["audio"]
+            # audio = base64.b64decode(audio)
+            status = message["data"]["status"]
+            # print(message)
+            if status == 2:
               print("ws is closed")
-              # ws.close()
-          if code != 0:
+              ws.close()
+            if code != 0:
               errMsg = message["message"]
               print("sid:%s call error:%s code is:%s" % (sid, errMsg, code))
-          else:
-             sse.publish({"audio": audio}, type='answer')
+            else:
+              sse.publish({"audio": audio, "status": status}, type='answer')
 
-      except Exception as e:
-          print("receive msg,but parse exception:", e)
+        except Exception as e:
+            print("receive msg,but parse exception:", e)
 
-    # 收到websocket错误的处理
-    def on_error(ws, error):
-      print("### error:", error)
+      # 收到websocket错误的处理
+      def on_error(ws, error):
+        print("### error:", error)
 
-    # 收到websocket关闭的处理
-    def on_close(ws):
-      print("### closed ###")
+      # 收到websocket关闭的处理
+      def on_close(ws, close_status_code, close_msg):
+        print("### closed ###")
 
-    # 向websocket发送消息的处理
-    def run(text):
-        d = {"common": wsParam.CommonArgs,
-             "business": wsParam.BusinessArgs,
-             "data": wsParam.set_text(text),
-             }
-        d = json.dumps(d)
-        print("------>开始发送文本数据")
-        ws.send(d)
+      # 收到websocket连接建立的处理
+      def on_open(ws):
+        print("### opened ###")
+
+        def run():
+          d = {"common": wsParam.CommonArgs,
+              "business": wsParam.BusinessArgs,
+              "data": wsParam.set_text(text),
+              }
+          d = json.dumps(d)
+          print("------>开始发送文本数据")
+          ws.send(d)
+
+        thread.start_new_thread(run, ())
+
+      ws = websocket.WebSocketApp(wsUrl, on_message=on_message, on_error=on_error, on_close=on_close)
+      ws.on_open = on_open
+      ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
     wsParam = Ws_Param(APPID=app.config['TTS_APP_ID'],
                        APISecret=app.config['TTS_API_SECRET'],
                        APIKey=app.config['TTS_API_KEY'])
     websocket.enableTrace(False)
     wsUrl = wsParam.create_url()
-    ws = websocket.WebSocketApp(wsUrl, on_message=on_message, on_error=on_error, on_close=on_close)
-    ws.on_open = on_open
-    ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
     # 调LLM API
     client = ZhipuAI(api_key=app.config['ZHIPU_API_KEY'])
@@ -137,7 +140,7 @@ def answer():
             },
             {
               'type': 'text',
-              'text': '请详细解答这些应用题, 按照解答思路, 计算过程和答案的格式输出',
+              'text': '请解答这些应用题, 按照解答思路, 计算过程和答案的格式输出, 尽量简洁',
             },
           ],
         },
@@ -153,8 +156,11 @@ def answer():
             ttsText += chunk.choices[0].delta.content
         else:
           if ttsText:
-            thread.start_new_thread(run, (ttsText,))
+            handle_tts(ttsText.replace('-', '减去').replace('+', '加上').replace('=', '等于'))
           ttsText = ''
+
+    if ttsText:
+       handle_tts(ttsText.replace('-', '减去').replace('+', '加上').replace('=', '等于'))
 
     return str(True)
 

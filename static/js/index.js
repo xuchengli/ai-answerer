@@ -75,12 +75,14 @@ $(document).ready(() => {
   var source = new EventSource("/stream");
   source.addEventListener('answer', function(event) {
     var data = JSON.parse(event.data);
-    $('#result')[0].innerText += data.message;
-
+    if (data.message) {
+      $('#result')[0].innerText += data.message;
+    }
     if (data.audio) {
       audioPlayer.postMessage({
         type: "base64",
         data: data.audio,
+        isLastData: data.status === 2,
       });
     }
   }, false);
